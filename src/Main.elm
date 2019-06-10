@@ -1,7 +1,6 @@
 port module Main exposing (Model)
 
 import Browser
-import Debug exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -172,7 +171,7 @@ update message model =
         CachedGridLoaded s ->
             let
                 result =
-                    Debug.log "" (D.decodeString decodeGrid s)
+                    D.decodeString decodeGrid s
 
                 newModel =
                     case result of
