@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "name": "times-tables-grid",
+  "alias": "times-tables-grid",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@now/static-build",
+      "config": {
+        "distDir": "public"
+      }
+    }
+  ]
+}

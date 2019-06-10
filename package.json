@@ -1,0 +1,13 @@
+{
+  "name": "times-tables-grid",
+  "version": "1.0.0",
+  "description": "Times tables grid to keep track of kids progress",
+  "license": "MIT",
+  "scripts": {
+    "now-build": "make ci-build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "elm": "^0.19.0"
+  }
+}
