@@ -218,7 +218,7 @@ view model =
                         ""
 
                     else
-                        toString val
+                        String.fromInt val
             in
             th
                 (cellStyle
@@ -242,7 +242,7 @@ view model =
                        , onClick (ChangeLevel x y)
                        ]
                 )
-                [ text (toString (x * y)) ]
+                [ text (String.fromInt (x * y)) ]
 
         displayRow i cells =
             tr [] (displayLabelCell i :: map displayCol cells)
