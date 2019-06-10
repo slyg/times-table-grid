@@ -27,6 +27,7 @@ type alias Model =
 type Msg
     = Noop
     | ChangeLevel Int Int
+    | CachedGridLoaded String
 
 
 init : Maybe Int -> ( Model, Cmd Msg )
@@ -134,6 +135,9 @@ update message model =
             ( updateModel model
             , cache (encodeGrid model)
             )
+
+        CachedGridLoaded s ->
+            Debug.log s ( model, Cmd.none )
 
 
 cellColor level =
@@ -249,6 +253,14 @@ view model =
 port cache : Encode.Value -> Cmd msg
 
 
+port cacheLoaded : (String -> msg) -> Sub msg
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    cacheLoaded (\s -> CachedGridLoaded s)
+
+
 main : Program (Maybe Int) Model Msg
 main =
     Browser.document
@@ -259,5 +271,5 @@ main =
                 { title = "Time table grid"
                 , body = [ view m ]
                 }
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }

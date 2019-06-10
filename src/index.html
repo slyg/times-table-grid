@@ -8,13 +8,19 @@
   </head>
   <body>
     <script>
-      var app = Elm.Main.init({
-        flags: 12
-      });
-      app.ports.cache.subscribe(function(data) {
-        console.log(data);
-        localStorage.setItem("cache", JSON.stringify(data));
-      });
+      (function() {
+        const cacheKey = "gridState";
+        const app = Elm.Main.init({ flags: 12 });
+
+        app.ports.cache.subscribe(function(data) {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        });
+
+        const cache = localStorage.getItem(cacheKey);
+        if (cache) {
+          app.ports.cacheLoaded.send("hello");
+        }
+      })();
     </script>
   </body>
 </html>
