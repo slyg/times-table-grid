@@ -85,41 +85,26 @@ decodeLevel level =
             D.succeed Default
 
 
-encodeCell : Cell -> E.Value
-encodeCell cell =
-    E.object
-        [ ( "x", E.int cell.x )
-        , ( "y", E.int cell.y )
-        , ( "level", encodeLevel cell.level )
-        ]
-
-
-decodeCell : Decoder Cell
-decodeCell =
-    D.map3 Cell
-        (at [ "x" ] D.int)
-        (at [ "y" ] D.int)
-        (at [ "level" ] D.string |> andThen decodeLevel)
-
-
-decodeCols : Decoder (List Cell)
-decodeCols =
-    D.list decodeCell
-
-
-encodeCols : List Cell -> E.Value
-encodeCols =
-    E.list encodeCell
-
-
 encodeGrid : Model -> E.Value
 encodeGrid =
-    E.list encodeCols
+    E.list <|
+        E.list <|
+            \cell ->
+                E.object
+                    [ ( "x", E.int cell.x )
+                    , ( "y", E.int cell.y )
+                    , ( "level", encodeLevel cell.level )
+                    ]
 
 
 decodeGrid : Decoder Model
 decodeGrid =
-    D.list decodeCols
+    D.list <|
+        D.list <|
+            D.map3 Cell
+                (at [ "x" ] D.int)
+                (at [ "y" ] D.int)
+                (at [ "level" ] D.string |> andThen decodeLevel)
 
 
 updateLevel : Level -> Level
@@ -158,11 +143,8 @@ update message model =
                 updateRow =
                     map (updateCell a b)
 
-                updateModel =
-                    map updateRow
-
                 newModel =
-                    updateModel model
+                    map updateRow model
             in
             ( newModel
             , cache (encodeGrid newModel)
@@ -215,7 +197,7 @@ view model =
             let
                 label =
                     if val == -1 then
-                        ""
+                        "×"
 
                     else
                         String.fromInt val
