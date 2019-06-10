@@ -11,6 +11,10 @@
       var app = Elm.Main.init({
         flags: 12
       });
+      app.ports.cache.subscribe(function(data) {
+        console.log(data);
+        localStorage.setItem("cache", JSON.stringify(data));
+      });
     </script>
   </body>
 </html>

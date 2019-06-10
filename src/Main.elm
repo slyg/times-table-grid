@@ -1,10 +1,11 @@
-module Main exposing (Model)
+port module Main exposing (Model)
 
 import Browser
 import Debug exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Json.Encode as Encode
 import List exposing (concat, indexedMap, length, map, range)
 
 
@@ -46,6 +47,45 @@ init max =
             map (\x -> map (\y -> ( x, y, Default )) numbers) numbers
     in
     ( data, Cmd.none )
+
+
+encodeLevel : Level -> Encode.Value
+encodeLevel level =
+    case level of
+        Default ->
+            Encode.string "Default"
+
+        Known ->
+            Encode.string "Known"
+
+        Guessed ->
+            Encode.string "Guessed"
+
+        Unknown ->
+            Encode.string "Unknown"
+
+
+encodeCell : Cell -> Encode.Value
+encodeCell cell =
+    let
+        ( a, b, level ) =
+            cell
+    in
+    Encode.object
+        [ ( "x", Encode.int a )
+        , ( "y", Encode.int b )
+        , ( "level", encodeLevel level )
+        ]
+
+
+encodeCols : List Cell -> Encode.Value
+encodeCols =
+    Encode.list encodeCell
+
+
+encodeGrid : Model -> Encode.Value
+encodeGrid =
+    Encode.list encodeCols
 
 
 updateLevel : Level -> Level
@@ -92,7 +132,7 @@ update message model =
                     map updateRow
             in
             ( updateModel model
-            , Cmd.none
+            , cache (encodeGrid model)
             )
 
 
@@ -204,6 +244,9 @@ view model =
                 displayLegend
             ]
         ]
+
+
+port cache : Encode.Value -> Cmd msg
 
 
 main : Program (Maybe Int) Model Msg
