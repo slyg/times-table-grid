@@ -28,11 +28,19 @@ type Msg
     | ChangeLevel Int Int
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : Maybe Int -> ( Model, Cmd Msg )
+init max =
     let
+        maxRange =
+            case max of
+                Just n ->
+                    n
+
+                Nothing ->
+                    10
+
         numbers =
-            range 0 12
+            range 0 maxRange
 
         data =
             map (\x -> map (\y -> ( x, y, Default )) numbers) numbers
@@ -198,7 +206,7 @@ view model =
         ]
 
 
-main : Program () Model Msg
+main : Program (Maybe Int) Model Msg
 main =
     Browser.document
         { init = init
