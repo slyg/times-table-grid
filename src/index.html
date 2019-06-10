@@ -18,7 +18,7 @@
 
         const cache = localStorage.getItem(cacheKey);
         if (cache) {
-          app.ports.cacheLoaded.send("hello");
+          app.ports.cacheLoaded.send(cache);
         }
       })();
     </script>

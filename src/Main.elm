@@ -5,7 +5,8 @@ import Debug exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import Json.Encode as Encode
+import Json.Decode as D exposing (Decoder, andThen, at)
+import Json.Encode as E
 import List exposing (concat, indexedMap, length, map, range)
 
 
@@ -17,7 +18,7 @@ type Level
 
 
 type alias Cell =
-    ( Int, Int, Level )
+    { x : Int, y : Int, level : Level }
 
 
 type alias Model =
@@ -45,48 +46,81 @@ init max =
             range 0 maxRange
 
         data =
-            map (\x -> map (\y -> ( x, y, Default )) numbers) numbers
+            map (\x -> map (\y -> Cell x y Default) numbers) numbers
     in
     ( data, Cmd.none )
 
 
-encodeLevel : Level -> Encode.Value
+encodeLevel : Level -> E.Value
 encodeLevel level =
     case level of
         Default ->
-            Encode.string "Default"
+            E.string "Default"
 
         Known ->
-            Encode.string "Known"
+            E.string "Known"
 
         Guessed ->
-            Encode.string "Guessed"
+            E.string "Guessed"
 
         Unknown ->
-            Encode.string "Unknown"
+            E.string "Unknown"
 
 
-encodeCell : Cell -> Encode.Value
+decodeLevel : String -> Decoder Level
+decodeLevel level =
+    case level of
+        "Known" ->
+            D.succeed Known
+
+        "Guessed" ->
+            D.succeed Guessed
+
+        "Unknown" ->
+            D.succeed Unknown
+
+        "Default" ->
+            D.succeed Default
+
+        _ ->
+            D.succeed Default
+
+
+encodeCell : Cell -> E.Value
 encodeCell cell =
-    let
-        ( a, b, level ) =
-            cell
-    in
-    Encode.object
-        [ ( "x", Encode.int a )
-        , ( "y", Encode.int b )
-        , ( "level", encodeLevel level )
+    E.object
+        [ ( "x", E.int cell.x )
+        , ( "y", E.int cell.y )
+        , ( "level", encodeLevel cell.level )
         ]
 
 
-encodeCols : List Cell -> Encode.Value
+decodeCell : Decoder Cell
+decodeCell =
+    D.map3 Cell
+        (at [ "x" ] D.int)
+        (at [ "y" ] D.int)
+        (at [ "level" ] D.string |> andThen decodeLevel)
+
+
+decodeCols : Decoder (List Cell)
+decodeCols =
+    D.list decodeCell
+
+
+encodeCols : List Cell -> E.Value
 encodeCols =
-    Encode.list encodeCell
+    E.list encodeCell
 
 
-encodeGrid : Model -> Encode.Value
+encodeGrid : Model -> E.Value
 encodeGrid =
-    Encode.list encodeCols
+    E.list encodeCols
+
+
+decodeGrid : Decoder Model
+decodeGrid =
+    D.list decodeCols
 
 
 updateLevel : Level -> Level
@@ -107,12 +141,8 @@ updateLevel level =
 
 updateCell : Int -> Int -> Cell -> Cell
 updateCell x y cell =
-    let
-        ( a, b, level ) =
-            cell
-    in
-    if (a == x && b == y) || (a == y && b == x) then
-        ( a, b, updateLevel level )
+    if (cell.x == x && cell.y == y) || (cell.x == y && cell.y == x) then
+        Cell cell.x cell.y (updateLevel cell.level)
 
     else
         cell
@@ -131,13 +161,28 @@ update message model =
 
                 updateModel =
                     map updateRow
+
+                newModel =
+                    updateModel model
             in
-            ( updateModel model
-            , cache (encodeGrid model)
+            ( newModel
+            , cache (encodeGrid newModel)
             )
 
         CachedGridLoaded s ->
-            Debug.log s ( model, Cmd.none )
+            let
+                result =
+                    Debug.log "" (D.decodeString decodeGrid s)
+
+                newModel =
+                    case result of
+                        Ok r ->
+                            r
+
+                        Err _ ->
+                            model
+            in
+            ( newModel, Cmd.none )
 
 
 cellColor level =
@@ -186,7 +231,11 @@ view model =
         displayTopLabels m =
             tr [] (indexedMap (\i n -> displayLabelCell n) (range -1 (length m - 1)))
 
-        displayCol ( x, y, level ) =
+        displayCol cell =
+            let
+                { x, y, level } =
+                    cell
+            in
             td
                 (cellStyle
                     ++ [ style "background-color" (cellColor level)
@@ -250,7 +299,7 @@ view model =
         ]
 
 
-port cache : Encode.Value -> Cmd msg
+port cache : E.Value -> Cmd msg
 
 
 port cacheLoaded : (String -> msg) -> Sub msg
