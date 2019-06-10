@@ -25,9 +25,14 @@ type alias Model =
 
 
 type Msg
-    = Noop
-    | ChangeLevel Int Int
+    = ChangeLevel Int Int
     | CachedGridLoaded String
+    | Reset
+
+
+updateModel : List Int -> Level -> Model
+updateModel rg level =
+    map (\x -> map (\y -> Cell x y level) rg) rg
 
 
 init : Maybe Int -> ( Model, Cmd Msg )
@@ -45,7 +50,7 @@ init max =
             range 0 maxRange
 
         data =
-            map (\x -> map (\y -> Cell x y Default) numbers) numbers
+            updateModel numbers Default
     in
     ( data, Cmd.none )
 
@@ -135,8 +140,14 @@ updateCell x y cell =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
-        Noop ->
-            ( model, Cmd.none )
+        Reset ->
+            let
+                newModel =
+                    updateModel (range 0 <| length model - 1) Default
+            in
+            ( newModel
+            , cache <| encodeGrid newModel
+            )
 
         ChangeLevel a b ->
             let
@@ -147,7 +158,7 @@ update message model =
                     map updateRow model
             in
             ( newModel
-            , cache (encodeGrid newModel)
+            , cache <| encodeGrid newModel
             )
 
         CachedGridLoaded s ->
@@ -163,7 +174,9 @@ update message model =
                         Err _ ->
                             model
             in
-            ( newModel, Cmd.none )
+            ( newModel
+            , Cmd.none
+            )
 
 
 cellColor level =
@@ -210,7 +223,7 @@ view model =
                 [ text label ]
 
         displayTopLabels m =
-            tr [] (indexedMap (\i n -> displayLabelCell n) (range -1 (length m - 1)))
+            tr [] (indexedMap (\i n -> displayLabelCell n) (range -1 <| length m - 1))
 
         displayCol cell =
             let
@@ -257,6 +270,16 @@ view model =
                         ]
             in
             map template legends
+
+        resetBtn =
+            button
+                [ onClick Reset
+                , style "padding" "1em 1.3em"
+                , style "font-size" "100%"
+                , style "border-radius" "0.5em"
+                , style "cursor" "pointer"
+                ]
+                [ text "Reset grid" ]
     in
     div
         [ style "display" "flex"
@@ -268,14 +291,19 @@ view model =
             , style "align-content" "center"
             , style "justify-content" "center"
             ]
-            [ table [ style "margin" "1em" ]
+            [ table
+                [ style "margin" "1em" ]
                 (displayTopLabels model
                     :: indexedMap displayRow model
                 )
             , div
                 [ style "margin" "1em"
                 ]
-                displayLegend
+                (List.concat
+                    [ displayLegend
+                    , [ resetBtn ]
+                    ]
+                )
             ]
         ]
 
