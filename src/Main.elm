@@ -5,7 +5,7 @@ import Debug exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import List exposing (concat, map, range)
+import List exposing (concat, indexedMap, length, map, range)
 
 
 type Level
@@ -115,6 +115,25 @@ view model =
             , style "transition" "background-color 0.2s"
             ]
 
+        displayLabelCell val =
+            let
+                label =
+                    if val == -1 then
+                        ""
+
+                    else
+                        toString val
+            in
+            th
+                (cellStyle
+                    ++ [ style "background-color" "#eee"
+                       ]
+                )
+                [ text label ]
+
+        displayTopLabels m =
+            tr [] (indexedMap (\i n -> displayLabelCell n) (range -1 (length m - 1)))
+
         displayCol ( x, y, level ) =
             td
                 (cellStyle
@@ -125,8 +144,8 @@ view model =
                 )
                 [ text (toString (x * y)) ]
 
-        displayRow cells =
-            tr [] (map displayCol cells)
+        displayRow i cells =
+            tr [] (displayLabelCell i :: map displayCol cells)
 
         displayLegend =
             let
@@ -167,10 +186,12 @@ view model =
             , style "align-content" "center"
             , style "justify-content" "center"
             ]
-            [ table []
-                (map displayRow model)
+            [ table [ style "margin" "1em" ]
+                (displayTopLabels model
+                    :: indexedMap displayRow model
+                )
             , div
-                [ style "padding" "1em"
+                [ style "margin" "1em"
                 ]
                 displayLegend
             ]
